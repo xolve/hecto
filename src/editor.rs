@@ -19,10 +19,7 @@ impl Editor {
     pub fn default() -> Self {
         Self {
             should_quit: false,
-            cursor_position: Position {
-                x: 0,
-                y: 0,
-            },
+            cursor_position: Position { x: 0, y: 0 },
             terminal: Terminal::default().expect("Unable to instantiate terminal."),
         }
     }
@@ -46,8 +43,15 @@ impl Editor {
         match pressed_key {
             Key::Ctrl('q') => {
                 self.should_quit = true;
-            },
-            Key::Up | Key::Right | Key::Down | Key::Left | Key::PageUp | Key::PageDown | Key::Home | Key::End => self.move_cursor(pressed_key),
+            }
+            Key::Up
+            | Key::Right
+            | Key::Down
+            | Key::Left
+            | Key::PageUp
+            | Key::PageDown
+            | Key::Home
+            | Key::End => self.move_cursor(pressed_key),
             _ => (),
         }
 
@@ -56,13 +60,21 @@ impl Editor {
 
     pub fn draw_rows(&self) {
         self.terminal.cursor_position(&Position { x: 0, y: 0 });
-        let Size { row: m, col: n,} = self.terminal.size();
-        println!("Size: {:?}. Position: {:?}.\r", self.terminal.size(), self.cursor_position);
+        let Size { row: m, col: n } = self.terminal.size();
+        println!(
+            "Size: {:?}. Position: {:?}.\r",
+            self.terminal.size(),
+            self.cursor_position
+        );
 
         for i in 1..(*m - 1) {
             self.terminal.clear_current_line();
             if i == m / 2 {
-                println!("~{}Hecto Version - {}\r", " ".repeat((n / 2 - 10).into()), env!("CARGO_PKG_VERSION"));
+                println!(
+                    "~{}Hecto Version - {}\r",
+                    " ".repeat((n / 2 - 10).into()),
+                    env!("CARGO_PKG_VERSION")
+                );
             } else {
                 println!("{}\r", i);
             }
@@ -89,17 +101,17 @@ impl Editor {
             Key::Up => y = y.saturating_sub(1),
             Key::Right => {
                 x = std::cmp::min((self.terminal.size().col - 1) as usize, x.saturating_add(1));
-            },
+            }
             Key::Down => {
-		y = std::cmp::min((self.terminal.size().row - 1) as usize,  y.saturating_add(1));
-	    },
-	    Key::Left => x = x.saturating_sub(1),
-	    Key::PageUp => y = 0,
-	    Key::PageDown => y = (self.terminal.size().row - 1) as usize,
-	    Key::Home => x = 0,
-	    Key::End => x = (self.terminal.size() .col - 1) as usize,
-	    _ => (),
-	}
-	self.cursor_position = Position { x, y }
+                y = std::cmp::min((self.terminal.size().row - 1) as usize, y.saturating_add(1));
+            }
+            Key::Left => x = x.saturating_sub(1),
+            Key::PageUp => y = 0,
+            Key::PageDown => y = (self.terminal.size().row - 1) as usize,
+            Key::Home => x = 0,
+            Key::End => x = (self.terminal.size().col - 1) as usize,
+            _ => (),
+        }
+        self.cursor_position = Position { x, y }
     }
 }
