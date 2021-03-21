@@ -7,8 +7,8 @@ use crate::editor::Position;
 
 #[derive(Debug)]
 pub struct Size {
-    pub row: u16,
-    pub col: u16,
+    pub width: u16,
+    pub height: u16,
 }
 
 pub struct Terminal {
@@ -21,8 +21,8 @@ impl Terminal {
         let size = termion::terminal_size()?;
         Ok(Self {
             size: Size {
-                row: size.1,
-                col: size.0,
+                width: size.0,
+                height: size.1 - 1,
             },
             _stdout: io::stdout().into_raw_mode()?,
         })

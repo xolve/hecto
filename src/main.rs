@@ -1,8 +1,8 @@
 mod editor;
 mod terminal;
+mod document;
 
 use editor::Editor;
-use terminal::Terminal;
 
 fn main() {
     Editor::default().run();
