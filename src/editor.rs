@@ -55,7 +55,8 @@ impl Editor {
         match pressed_key {
             Key::Ctrl('q') => {
                 self.should_quit = true;
-            }
+            },
+
             Key::Up
             | Key::Right
             | Key::Down
@@ -64,6 +65,12 @@ impl Editor {
             | Key::PageDown
             | Key::Home
             | Key::End => self.move_cursor(pressed_key),
+
+            Key::Char(c) => {
+                self.document.insert(&self.cursor_position, c);
+                self.move_cursor(Key::Right);
+            },
+
             _ => (),
         }
 

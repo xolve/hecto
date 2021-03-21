@@ -1,5 +1,8 @@
 use std::usize;
 
+use crate::editor::Position;
+
+#[derive(Default)]
 pub struct Row {
     data: String,
     len: usize,
@@ -29,6 +32,11 @@ impl Row {
     pub fn len(&self) -> usize {
         self.len
     }
+
+    pub fn insert (&mut self, xpos: usize, c: char) {
+        self.data.insert(xpos, c);
+        self.len = self.data.chars().count();
+    }
 }
 
 impl Document {
@@ -50,5 +58,14 @@ impl Document {
 
     pub fn len(&self) -> usize {
         self.rows.len()
+    }
+
+    pub fn insert(&mut self, pos: &Position, c: char) {
+        if pos.y == self.len() {
+        let row = Row::default();
+            self.rows.push(row);
+        }
+        let row = self.rows.get_mut(pos.y).unwrap();
+        row.insert(pos.x, c);
     }
 }
