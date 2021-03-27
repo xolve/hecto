@@ -71,6 +71,19 @@ impl Editor {
                 self.move_cursor(Key::Right);
             },
 
+            Key::Backspace => {
+                if self.cursor_position.x == 0 && self.cursor_position.y == 0 {
+                    ()
+                } else {
+                    self.move_cursor(Key::Left);
+                    self.document.delete(&self.cursor_position);
+                }
+            },
+
+            Key::Delete => {
+                self.document.delete(&self.cursor_position);
+            }
+
             _ => (),
         }
 

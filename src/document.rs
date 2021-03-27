@@ -37,6 +37,18 @@ impl Row {
         self.data.insert(xpos, c);
         self.len = self.data.chars().count();
     }
+
+    pub fn delete(&mut self, xpos: usize) {
+        let before = self.data.chars().take(xpos);
+        let after = self.data.chars().skip(xpos + 1);
+        self.data = before.chain(after).collect();
+        self.len = self.data.chars().count();
+    }
+
+    pub fn append(&mut self, other: &Self) {
+        self.data.push_str(&other.data);
+        self.len = self.data.chars().count();
+    }
 }
 
 impl Document {
@@ -67,5 +79,23 @@ impl Document {
         }
         let row = self.rows.get_mut(pos.y).unwrap();
         row.insert(pos.x, c);
+    }
+
+    pub fn delete(&mut self, pos: &Position) {
+        let row_len_opt = self.rows.get(pos.y).map(|r| r.len);
+        if let Some(row_len) = row_len_opt {
+            if row_len <= pos.x {
+                let next_row = if self.rows.get(pos.y + 1).is_some() {
+                    self.rows.remove(pos.y + 1)
+                } else {
+                    Row::default()
+                };
+                let row = self.rows.get_mut(pos.y).unwrap();
+                row.append(&next_row);
+            } else {
+                let row = self.rows.get_mut(pos.y).unwrap();
+                row.delete(pos.x);
+            }
+        }
     }
 }
