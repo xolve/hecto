@@ -33,20 +33,24 @@ impl Row {
         self.len
     }
 
-    pub fn insert (&mut self, xpos: usize, c: char) {
+    pub fn insert(&mut self, xpos: usize, c: char) {
         self.data.insert(xpos, c);
-        self.len = self.data.chars().count();
+        self.update_len();
     }
 
     pub fn delete(&mut self, xpos: usize) {
         let before = self.data.chars().take(xpos);
         let after = self.data.chars().skip(xpos + 1);
         self.data = before.chain(after).collect();
-        self.len = self.data.chars().count();
+        self.update_len();
     }
 
     pub fn append(&mut self, other: &Self) {
         self.data.push_str(&other.data);
+        self.update_len();
+    }
+
+    fn update_len(&mut self) {
         self.len = self.data.chars().count();
     }
 }
@@ -72,10 +76,28 @@ impl Document {
         self.rows.len()
     }
 
+    pub fn insert_newline(&mut self, pos: &Position) {
+        let up_down = self.rows.get(pos.y).map(|row| {
+            let (up, down) = row.data.split_at(pos.x);
+            println!("->{} {}<-", up, down);
+            (Row::from(up), Row::from(down))
+        });
+
+        up_down.map(|(up, down)| {
+            self.rows.remove(pos.y);
+            self.rows.insert(pos.y, up);
+            self.rows.insert(pos.y.saturating_add(1), down);
+        });
+    }
+
     pub fn insert(&mut self, pos: &Position, c: char) {
-        if pos.y == self.len() {
-        let row = Row::default();
-            self.rows.push(row);
+        if c == '\n' {
+            if pos.y == self.len() {
+                let row = Row::default();
+                self.rows.push(row);
+            } else {
+
+            }
         }
         let row = self.rows.get_mut(pos.y).unwrap();
         row.insert(pos.x, c);

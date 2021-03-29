@@ -66,6 +66,12 @@ impl Editor {
             | Key::Home
             | Key::End => self.move_cursor(pressed_key),
 
+            Key::Char('\n') => {
+                self.document.insert_newline(&self.cursor_position);
+                self.move_cursor(Key::Down);
+                self.move_cursor(Key::Home);
+            },
+
             Key::Char(c) => {
                 self.document.insert(&self.cursor_position, c);
                 self.move_cursor(Key::Right);
