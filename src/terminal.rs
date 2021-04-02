@@ -22,7 +22,7 @@ impl Terminal {
         Ok(Self {
             size: Size {
                 width: size.0,
-                height: size.1 - 1,
+                height: size.1,
             },
             _stdout: io::stdout().into_raw_mode()?,
         })

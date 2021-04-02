@@ -100,16 +100,16 @@ impl Editor {
 
     fn draw_row(&self, row: &Row) {
         let start = self.offset.x;
-        let end = self.offset.x + self.terminal.size().width as usize;
+        let end = self.offset.x + self.document_viewport_size().width as usize;
         let row = row.render(start, end);
         println!("{}\r", row);
     }
 
     pub fn draw_rows(&self) {
         self.terminal.cursor_position(&Position { x: 0, y: 0 });
-        let Size { height: m, width: n } = self.terminal.size();
+        let Size { height: m, width: n } = self.document_viewport_size();
 
-        for i in 0..(*m - 1) {
+        for i in 0..m {
             self.terminal.clear_current_line();
             if let Some(row) = self.document.row(i as usize + self.offset.y) {
                 self.draw_row(row);
@@ -129,7 +129,7 @@ impl Editor {
         print!(
             "{}Size: {:?}. Cursor Position: {:?}. Offset: {:?}. doc len: {}, line len: {}\r",
             termion::color::Fg(termion::color::LightRed),
-            self.terminal.size(),
+            self.document_viewport_size(),
             self.cursor_position,
             self.offset,
             self.document.len(),
@@ -157,7 +157,7 @@ impl Editor {
 
     fn move_cursor(&mut self, key: Key) {
         let Position { mut x, mut y } = self.cursor_position;
-        let height = self.terminal.size().height as usize;
+        let height = self.document_viewport_size().height as usize;
         match key {
             Key::Up => y = y.saturating_sub(1),
             Key::Right => {
@@ -211,8 +211,8 @@ impl Editor {
 
     fn scroll(&mut self) {
         let Position { x, y} = self.cursor_position;
-        let width = self.terminal.size().width as usize;
-        let height = (self.terminal.size().height as usize);//.saturating_sub(1);
+        let width = self.document_viewport_size().width as usize;
+        let height = self.document_viewport_size().height as usize;
         let mut offset = &mut self.offset;
 
         if y < offset.y {
@@ -225,6 +225,14 @@ impl Editor {
             offset.x = x;
         } else if x > offset.x.saturating_add(width) {
             offset.x = x.saturating_sub(width).saturating_add(1);
+        }
+    }
+
+    fn document_viewport_size(&self) -> Size {
+        let terminal_size = self.terminal.size();
+        Size {
+            width: terminal_size.width,
+            height: terminal_size.height - 1,
         }
     }
 }
