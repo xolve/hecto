@@ -8,3 +8,5 @@ edition = "2018"
 
 [dependencies]
 termion = "1"
+log = "0.4"
+log4rs = "1"

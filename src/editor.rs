@@ -1,5 +1,6 @@
-use std::io::{self, Seek};
-use termion::event::Key;
+use std::{io, path::Path};
+use log::info;
+use termion::{color, event::Key};
 
 use crate::terminal::{Size, Terminal};
 use crate::document::{Document, Row};
@@ -57,6 +58,10 @@ impl Editor {
                 self.should_quit = true;
             },
 
+            Key::Ctrl('s') => {
+                self.document.save()?;
+            }
+
             Key::Up
             | Key::Right
             | Key::Down
@@ -66,15 +71,15 @@ impl Editor {
             | Key::Home
             | Key::End => self.move_cursor(pressed_key),
 
-            Key::Char('\n') => {
-                self.document.insert_newline(&self.cursor_position);
-                self.move_cursor(Key::Down);
-                self.move_cursor(Key::Home);
-            },
-
             Key::Char(c) => {
-                self.document.insert(&self.cursor_position, c);
-                self.move_cursor(Key::Right);
+                if c == '\n' {
+                    self.document.insert_newline(&self.cursor_position);
+                    self.move_cursor(Key::Down);
+                    self.move_cursor(Key::Home);
+                } else {
+                    self.document.insert(&self.cursor_position, c);
+                    self.move_cursor(Key::Right);
+                }
             },
 
             Key::Backspace => {
@@ -106,6 +111,7 @@ impl Editor {
     }
 
     pub fn draw_rows(&self) {
+        info!("Called draw rows");
         self.terminal.cursor_position(&Position { x: 0, y: 0 });
         let Size { height: m, width: n } = self.document_viewport_size();
 
@@ -124,23 +130,37 @@ impl Editor {
             }
         }
 
-        let Position { x: _, y } = self.cursor_position;
-        self.terminal.clear_current_line();
-        print!(
-            "{}Size: {:?}. Cursor Position: {:?}. Offset: {:?}. doc len: {}, line len: {}\r",
-            termion::color::Fg(termion::color::LightRed),
+        let p = self.document.filename()
+            .map(|p| std::fs::canonicalize(Path::new(&p)).unwrap().as_os_str().to_owned());
+        let status_messgae = format!("{:?}", p);
+        self.set_status_message(&status_messgae);
+
+        info!(
+            "Size: {:?}. Cursor Position: {:?}. Offset: {:?}.\r",
             self.document_viewport_size(),
             self.cursor_position,
             self.offset,
-            self.document.len(),
-            self.document.row(y).map_or(0, |r| r.len())
         );
-        print!("{}", termion::color::Fg(termion::color::Reset));
     }
 
-    fn refresh_screen(&self) {
+    pub fn set_status_message(&self, message: &str)
+    {
+        let w = self.terminal.size().width as usize;
+        let h = self.terminal.size().height as usize;
+        self.terminal.cursor_position(& Position { x: 0, y: h});
+        self.terminal.clear_current_line();
+        print!("{}{}", color::Bg(color::LightCyan), message);
+        if message.len() < w {
+            print!("{}{}",  color::Bg(color::LightCyan), " ".repeat(w - message.len()));
+        }
+        
+        print!("{}", color::Bg(termion::color::Reset));
+    }
+
+    fn refresh_screen(&mut self) {
         self.terminal.hide_cursor();
         if self.should_quit {
+            self.prompt_save_before_exit();
             self.terminal.clear_screen();
             println!("Goodbye");
         } else {
@@ -234,5 +254,33 @@ impl Editor {
             width: terminal_size.width,
             height: terminal_size.height - 1,
         }
+    }
+
+    fn prompt_save_before_exit(&mut self) -> Result<(), io::Error> {
+        if self.document.get_modified() {
+            let answer = self.prompt("Unsaved, wanna save (y/n): ")?;
+            if answer.starts_with("y") {
+                self.document.save()?
+            }
+        }
+        Ok(())
+    }
+
+    fn prompt(&self, message: &str) -> Result<String, io::Error> {
+        let mut result = String::new();
+        loop {
+            let status_message = format!("{}{}", message, result);
+            self.set_status_message(&status_message);
+            self.terminal.show_cursor();
+            if let Key::Char(c) = self.terminal.read_key()? {
+                if c == '\n' {
+                    break;
+                } else if !c.is_control() {
+                    result.push(c)
+                }
+            }
+        }
+
+        Ok(result)
     }
 }

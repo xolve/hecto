@@ -1,5 +1,5 @@
-use std::usize;
-
+use std::{fs, path::Path};
+use std::io::{self, Error, Write};
 use crate::editor::Position;
 
 #[derive(Default)]
@@ -10,7 +10,9 @@ pub struct Row {
 
 #[derive(Default)]
 pub struct Document {
+    filename: Option<String>,
     rows: Vec<Row>,
+    is_modified: bool,
 }
 
 impl From<&str> for Row {
@@ -57,11 +59,23 @@ impl Row {
 
 impl Document {
     pub fn open(filename: &str) -> Result<Self, std::io::Error> {
-        let contents = std::fs::read_to_string(filename)?;
-        let rows = contents.lines().into_iter().map(|l| Row::from(l)).collect::<Vec<Row>>();
-        Ok(Self {
-            rows
-        })
+        let path = Path::new(filename);
+        
+        if path.exists() {
+            let contents = std::fs::read_to_string(filename)?;
+            let rows = contents.lines().into_iter().map(|l| Row::from(l)).collect::<Vec<Row>>();
+            Ok(Self {
+                filename: Some(filename.to_owned()),
+                rows,
+                is_modified: false,
+            })
+        } else {
+            Ok(Self {
+                filename: Some(filename.to_owned()),
+                rows: Vec::new(),
+                is_modified: false,
+            })
+        }
     }
 
     pub fn row(&self, index: usize) -> Option<&Row> {
@@ -88,6 +102,7 @@ impl Document {
             self.rows.insert(pos.y, up);
             self.rows.insert(pos.y.saturating_add(1), down);
         });
+        self.is_modified = true;
     }
 
     pub fn insert(&mut self, pos: &Position, c: char) {
@@ -101,6 +116,7 @@ impl Document {
         }
         let row = self.rows.get_mut(pos.y).unwrap();
         row.insert(pos.x, c);
+        self.is_modified = true;
     }
 
     pub fn delete(&mut self, pos: &Position) {
@@ -119,5 +135,26 @@ impl Document {
                 row.delete(pos.x);
             }
         }
+        self.is_modified = true;
+    }
+
+    pub fn save(&mut self) -> io::Result<()> {
+        if let Some(filename) = &self.filename {
+            let mut fp = fs::File::create(filename)?;
+            for row in &self.rows {
+                fp.write_all(row.data.as_bytes())?;
+                fp.write_all(b"\n")?;
+            }
+        };
+        self.is_modified = false;
+        Ok(())
+    }
+
+    pub fn get_modified(&mut self) -> bool {
+        self.is_modified
+    }
+
+    pub fn filename(&self) -> Option<&String> {
+        self.filename.as_ref()
     }
 }
