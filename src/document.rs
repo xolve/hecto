@@ -1,6 +1,6 @@
-use std::{fs, path::Path};
-use std::io::{self, Error, Write};
 use crate::editor::Position;
+use std::io::{self, Write};
+use std::{fs, path::Path};
 
 #[derive(Default)]
 pub struct Row {
@@ -60,10 +60,14 @@ impl Row {
 impl Document {
     pub fn open(filename: &str) -> Result<Self, std::io::Error> {
         let path = Path::new(filename);
-        
+
         if path.exists() {
             let contents = std::fs::read_to_string(filename)?;
-            let rows = contents.lines().into_iter().map(|l| Row::from(l)).collect::<Vec<Row>>();
+            let rows = contents
+                .lines()
+                .into_iter()
+                .map(|l| Row::from(l))
+                .collect::<Vec<Row>>();
             Ok(Self {
                 filename: Some(filename.to_owned()),
                 rows,
@@ -111,7 +115,6 @@ impl Document {
                 let row = Row::default();
                 self.rows.push(row);
             } else {
-
             }
         }
         let row = self.rows.get_mut(pos.y).unwrap();

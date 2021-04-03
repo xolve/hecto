@@ -1,9 +1,9 @@
-use std::{io, path::Path};
 use log::info;
+use std::{io, path::Path};
 use termion::{color, event::Key};
 
-use crate::terminal::{Size, Terminal};
 use crate::document::{Document, Row};
+use crate::terminal::{Size, Terminal};
 
 #[derive(Debug, Default)]
 pub struct Position {
@@ -46,7 +46,7 @@ impl Editor {
             }
 
             if let Err(error) = self.process_keypress() {
-                panic!(error);
+                panic!("{}", error);
             }
         }
     }
@@ -56,7 +56,7 @@ impl Editor {
         match pressed_key {
             Key::Ctrl('q') => {
                 self.should_quit = true;
-            },
+            }
 
             Key::Ctrl('s') => {
                 self.document.save()?;
@@ -80,7 +80,7 @@ impl Editor {
                     self.document.insert(&self.cursor_position, c);
                     self.move_cursor(Key::Right);
                 }
-            },
+            }
 
             Key::Backspace => {
                 if self.cursor_position.x == 0 && self.cursor_position.y == 0 {
@@ -89,7 +89,7 @@ impl Editor {
                     self.move_cursor(Key::Left);
                     self.document.delete(&self.cursor_position);
                 }
-            },
+            }
 
             Key::Delete => {
                 self.document.delete(&self.cursor_position);
@@ -113,7 +113,10 @@ impl Editor {
     pub fn draw_rows(&self) {
         info!("Called draw rows");
         self.terminal.cursor_position(&Position { x: 0, y: 0 });
-        let Size { height: m, width: n } = self.document_viewport_size();
+        let Size {
+            height: m,
+            width: n,
+        } = self.document_viewport_size();
 
         for i in 0..m {
             self.terminal.clear_current_line();
@@ -130,8 +133,12 @@ impl Editor {
             }
         }
 
-        let p = self.document.filename()
-            .map(|p| std::fs::canonicalize(Path::new(&p)).unwrap().as_os_str().to_owned());
+        let p = self.document.filename().map(|p| {
+            std::fs::canonicalize(Path::new(&p))
+                .unwrap()
+                .as_os_str()
+                .to_owned()
+        });
         let status_messgae = format!("{:?}", p);
         self.set_status_message(&status_messgae);
 
@@ -143,17 +150,20 @@ impl Editor {
         );
     }
 
-    pub fn set_status_message(&self, message: &str)
-    {
+    pub fn set_status_message(&self, message: &str) {
         let w = self.terminal.size().width as usize;
         let h = self.terminal.size().height as usize;
-        self.terminal.cursor_position(& Position { x: 0, y: h});
+        self.terminal.cursor_position(&Position { x: 0, y: h });
         self.terminal.clear_current_line();
         print!("{}{}", color::Bg(color::LightCyan), message);
         if message.len() < w {
-            print!("{}{}",  color::Bg(color::LightCyan), " ".repeat(w - message.len()));
+            print!(
+                "{}{}",
+                color::Bg(color::LightCyan),
+                " ".repeat(w - message.len())
+            );
         }
-        
+
         print!("{}", color::Bg(termion::color::Reset));
     }
 
@@ -197,29 +207,23 @@ impl Editor {
             Key::Left => {
                 if x > 0 {
                     x -= 1;
-                } else if y > 0{
+                } else if y > 0 {
                     y -= 1;
                     x = self.document.row(y).map_or(0, |r| r.len());
                 }
-            },
-            Key::PageUp => {
-                y = if y > height {
-                    y - height
-                } else {
-                    0
-                }
-            },
+            }
+            Key::PageUp => y = if y > height { y - height } else { 0 },
             Key::PageDown => {
                 y = if y.saturating_add(height) < self.document.len() {
                     y + height
                 } else {
                     self.document.len()
                 }
-            },
+            }
             Key::Home => x = 0,
             Key::End => {
                 x = self.document.row(y).map_or(0, |r| r.len());
-            },
+            }
             _ => (),
         }
         let width = self.document.row(y).map_or(0, |r| r.len());
@@ -230,7 +234,7 @@ impl Editor {
     }
 
     fn scroll(&mut self) {
-        let Position { x, y} = self.cursor_position;
+        let Position { x, y } = self.cursor_position;
         let width = self.document_viewport_size().width as usize;
         let height = self.document_viewport_size().height as usize;
         let mut offset = &mut self.offset;
